@@ -1,0 +1,17 @@
+query DeliveryInput {
+  cart {
+    deliveryGroups {
+      id
+      deliveryOptions{
+        cost{
+          amount
+        }
+        handle
+        title
+      }
+    }
+  }
+  discount{
+    discountClasses
+  }
+}

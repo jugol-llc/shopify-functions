@@ -1,0 +1,25 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "dcf45dddaea8fb8e856e0b2f2436a7a5"
+name = "Discounter"
+handle = "discounter-33"
+application_url = "https://first-app.test/"
+embedded = false
+
+[build]
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2025-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [ "https://first-app.test/" ]
+
+[pos]
+embedded = false
+
+
