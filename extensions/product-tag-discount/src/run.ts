@@ -15,8 +15,12 @@ type Configuration = {};
 
 export function run(input: RunInput): FunctionRunResult {
 
-  const MIMINUM_DISCOUNT_ITEMS = 3;
-  const DISCOUNT_AMOUNT =  20;
+  const MIMINUM_DISCOUNT_ITEMS = 2; 
+  let DISCOUNT_AMOUNT =  5;
+
+  if(input?.discountNode?.metafield?.jsonValue?.amount){
+    DISCOUNT_AMOUNT = input?.discountNode?.metafield?.jsonValue?.amount
+  }
   
   const totalDiscounttagItems = input.cart.lines.reduce((total:any, item) => {
     if(item.merchandise.__typename === "ProductVariant" && item.merchandise.product.hasDiscountTag){
@@ -26,7 +30,7 @@ export function run(input: RunInput): FunctionRunResult {
     }
   }, 0)
 
-  if(totalDiscounttagItems >= MIMINUM_DISCOUNT_ITEMS){
+  if((totalDiscounttagItems >= MIMINUM_DISCOUNT_ITEMS)){
     return {
       discountApplicationStrategy: DiscountApplicationStrategy.First,
       discounts: [

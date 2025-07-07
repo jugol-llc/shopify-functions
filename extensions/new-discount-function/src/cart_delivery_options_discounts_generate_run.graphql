@@ -13,5 +13,8 @@ query DeliveryInput {
   }
   discount{
     discountClasses
+    metafield(namespace: "FUNCTIONS", key: "SHOPIFY_FUNCTION") {
+      jsonValue
+    }
   }
 }

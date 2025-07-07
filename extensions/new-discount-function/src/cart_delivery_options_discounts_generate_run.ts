@@ -6,21 +6,37 @@ import {
 } from "../generated/api";
 
 export function cartDeliveryOptionsDiscountsGenerateRun(
-  input: DeliveryInput,
+  input: DeliveryInput
 ): CartDeliveryOptionsDiscountsGenerateRunResult {
-
   const hasShippingDiscountClass = input.discount.discountClasses.includes(
-    DiscountClass.Shipping,
+    DiscountClass.Shipping
   );
 
   if (!hasShippingDiscountClass) {
-    return {operations: []};
+    return { operations: [] };
   }
 
-  const firstDeliveryGroup = input.cart.deliveryGroups?.filter(item => Number?.parseFloat(item?.deliveryOptions?.[0]?.cost?.amount) > 0  && item)[0];
+  const firstDeliveryGroup = input.cart.deliveryGroups?.filter(
+    (item) =>
+      Number?.parseFloat(item?.deliveryOptions?.[0]?.cost?.amount) > 0 && item
+  )[0];
+
+  let DISCOUNT_AMOUNT = 5;
+  let DISCOUNT_TYPE = "fixed";
+  if (input?.discount?.metafield?.jsonValue?.amount) {
+    DISCOUNT_AMOUNT = input?.discount?.metafield?.jsonValue?.amount;
+  }
+  if (input?.discount?.metafield?.jsonValue?.type) {
+    DISCOUNT_TYPE = input?.discount?.metafield?.jsonValue?.type;
+  }
+
+  const discountValue =
+    DISCOUNT_TYPE === "fixed"
+      ? { fixedAmount: { amount: DISCOUNT_AMOUNT } }
+      : { percentage: { value: DISCOUNT_AMOUNT } };
 
   if (!firstDeliveryGroup) {
-    throw new Error("No delivery groups found");
+    return { operations: [] };
   }
 
   return {
@@ -37,14 +53,7 @@ export function cartDeliveryOptionsDiscountsGenerateRun(
                   },
                 },
               ],
-              value: {
-                fixedAmount: {
-                  amount: 1000
-                },
-                // percentage: {
-                //   value: 100
-                // }
-              },
+              value: discountValue,
             },
           ],
           selectionStrategy: DeliveryDiscountSelectionStrategy.All,

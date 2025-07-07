@@ -11,5 +11,8 @@ query CartInput {
   }
   discount{
     discountClasses
+    metafield(namespace: "FUNCTIONS", key: "SHOPIFY_FUNCTION") {
+      jsonValue
+    }
   }
 }

@@ -12,4 +12,9 @@ query RunInput {
       }
     }
   }
+  discountNode {
+    metafield(namespace: "FUNCTIONS", key: "SHOPIFY_FUNCTION") {
+      jsonValue
+    }
+  } 
 }
