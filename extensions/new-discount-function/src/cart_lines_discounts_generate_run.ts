@@ -37,9 +37,7 @@ export function cartLinesDiscountsGenerateRun(
   if (!hasOrderDiscountClass && !hasProductDiscountClass) {
     return { operations: [] };
   }
-
-  if (
-    (hasOrderDiscountClass || hasProductDiscountClass) && chackedRules?.length) {
+  if ((hasOrderDiscountClass || hasProductDiscountClass) && chackedRules?.length) {
     const orderCandidates: any[] = [];
     const productCandidates: any[] = [];
 
@@ -48,8 +46,8 @@ export function cartLinesDiscountsGenerateRun(
 
       const discountValue =
         rule.actionType === "fixed"
-          ? { fixedAmount: { amount: rule.actionValue } }
-          : { percentage: { value: rule.actionValue } };
+          ? { fixedAmount: { amount: parseFloat(rule.actionValue) } }
+          : { percentage: { value: parseFloat(rule.actionValue) } };
 
       if (hasOrderDiscountClass) {
         orderCandidates.push({
@@ -91,11 +89,78 @@ export function cartLinesDiscountsGenerateRun(
       operations.push({
         productDiscountsAdd: {
           candidates: productCandidates,
-          selectionStrategy: ProductDiscountSelectionStrategy.All,
+          selectionStrategy: ProductDiscountSelectionStrategy.First,
         },
       });
     }
   }
+
+  // console.log("chackedRules?.length < 0 && input?.discount?.metafield?.jsonValue?.conditions === undefined", chackedRules?.length < 0 && input?.discount?.metafield?.jsonValue?.conditions === undefined)
+  // console.log("chackedRules", chackedRules)
+  // console.log("chackedRules length", chackedRules?.length)
+  // console.log("chackedinput?.discount?.metafield?.jsonValueRules", JSON.stringify(input?.discount?.metafield?.jsonValue, null, 2))
+
+  
+  // if(!(chackedRules?.length > 0) && input?.discount?.metafield?.jsonValue?.discountType === 'automatic'){
+  //   const orderCandidates: any[] = [];
+  //   const productCandidates: any[] = [];
+
+  //   let discountValue = {}
+  //   if(input?.discount?.metafield?.jsonValue?.type){
+  //      discountValue = input?.discount?.metafield?.jsonValue?.type === 'fixed'
+  //         ? { fixedAmount: { amount: input?.discount?.metafield?.jsonValue?.amount } }
+  //         : { percentage: { value: input?.discount?.metafield?.jsonValue?.amount } };
+  //   }
+    
+  //   if (hasOrderDiscountClass) {
+  //     orderCandidates.push({
+  //       message: `Automatic Discount`,
+  //       targets: [
+  //         {
+  //           orderSubtotal: {
+  //             excludedCartLineIds: [],
+  //           },
+  //         },
+  //       ],
+  //       value: discountValue,
+  //     });
+  //   }
+
+  //   if (hasProductDiscountClass) {
+  //     const targets = input.cart.lines.map((item) => ({
+  //       cartLine: { id: item.id },
+  //     }));
+
+  //     productCandidates.push({
+  //       message: `Automatic Discount`,
+  //       targets,
+  //       value: discountValue,
+  //     });
+  //   }
+      
+
+  //   if (orderCandidates.length) {
+  //     operations.push({ 
+  //       orderDiscountsAdd: {
+  //         candidates: orderCandidates,
+  //         selectionStrategy: OrderDiscountSelectionStrategy.First,
+  //       },
+  //     });
+  //   }
+
+
+  //   console.log("productCandidates", JSON.stringify(productCandidates))
+
+  //   if (productCandidates.length) {
+  //     operations.push({
+  //       productDiscountsAdd: {
+  //         candidates: productCandidates,
+  //         selectionStrategy: ProductDiscountSelectionStrategy.All,
+  //       },
+  //     });
+  //   }
+  // }
+
 
   return {
     operations,
