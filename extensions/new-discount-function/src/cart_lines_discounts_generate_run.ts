@@ -5,6 +5,7 @@ import {
   CartInput,
   CartLinesDiscountsGenerateRunResult,
 } from "../generated/api";
+import { ConditionResult } from "../types/rules";
 import { rulesSet } from "../utils/rules";
 
 export function cartLinesDiscountsGenerateRun(
@@ -24,17 +25,21 @@ export function cartLinesDiscountsGenerateRun(
     DiscountClass.Product
   );
 
-  const chackedRules = rulesSet(input, input.discount.metafield?.jsonValue);
-  // const isAppliedDiscount = chackedRules?.some((item) => item.subCondition === true)
+  let chackedRules: ConditionResult[] = [];
+  if (input?.discount?.metafield?.jsonValue) {
+    chackedRules = rulesSet(input, input?.discount?.metafield?.jsonValue);
+  }
+
+  const isAppliedDiscount = chackedRules?.some(
+    (item) => item.subCondition === true
+  );
 
   if (!hasOrderDiscountClass && !hasProductDiscountClass) {
     return { operations: [] };
   }
 
   if (
-    (hasOrderDiscountClass || hasProductDiscountClass) &&
-    chackedRules?.length
-  ) {
+    (hasOrderDiscountClass || hasProductDiscountClass) && chackedRules?.length) {
     const orderCandidates: any[] = [];
     const productCandidates: any[] = [];
 

@@ -7,8 +7,8 @@ export const rulesSet = (input: CartInput, discount: DiscountMetafield) =>
 
 function evaluateCartConditions( cart: any, conditionData: DiscountMetafield,) {
 
-  let total_items = cart.lines.reduce((sum: any, line: { quantity: any; }) => sum + line.quantity, 0);
-  const subtotal_price = parseFloat(cart.cost.subtotalAmount.amount);
+  let total_items = cart?.lines?.reduce((sum: any, line: { quantity: any; }) => sum + line?.quantity, 0) ?? 0;
+  const subtotal_price = parseFloat(cart?.cost?.subtotalAmount?.amount) ?? 0;
 
   const inputValues = {
     total_items,
@@ -17,28 +17,30 @@ function evaluateCartConditions( cart: any, conditionData: DiscountMetafield,) {
 
   const results: ConditionResult[] = [];
 
-  for (const conditionGroup of conditionData.conditions) {
-    let allTrue = true;
+  if(conditionData.conditions?.length){
+    for (const conditionGroup of conditionData.conditions) {
+      let allTrue = true;
 
-    for (const subCondition of conditionGroup.subConditions) {
-      const { parameter, operator, value } = subCondition;
-      const inputValue = inputValues[parameter];
-      let targetValue: string | number;
-      if (typeof value === "number") {
-        targetValue = isNaN(value) ? value : value;
-      } else {
-        targetValue = parseFloat(value);
+      for (const subCondition of conditionGroup.subConditions) {
+        const { parameter, operator, value } = subCondition;
+        const inputValue = inputValues[parameter];
+        let targetValue: string | number;
+        if (typeof value === "number") {
+          targetValue = isNaN(value) ? value : value;
+        } else {
+          targetValue = parseFloat(value);
+        }
+          allTrue = checkOperations(operator, inputValue, targetValue)
+        if (!allTrue) break;
       }
-        allTrue = checkOperations(operator, inputValue, targetValue)
-      if (!allTrue) break;
-    }
 
-    results.push({
-      subCondition: allTrue,
-      discountType: conditionGroup.discountType,
-      actionType: conditionGroup.actionType,
-      actionValue: conditionGroup.actionValue,
-    });
+      results.push({
+        subCondition: allTrue,
+        discountType: conditionGroup.discountType,
+        actionType: conditionGroup.actionType,
+        actionValue: conditionGroup.actionValue,
+      });
+    }
   }
 
   return results;
