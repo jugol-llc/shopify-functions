@@ -1,14 +1,28 @@
 query DeliveryInput {
   cart {
-    cost{
-      subtotalAmount{
+    lines {
+      id
+      quantity
+      merchandise {
+        ... on ProductVariant {
+          id
+        }
+      }
+      cost {
+        subtotalAmount {
+          amount
+        }
+      }
+    }
+    cost {
+      subtotalAmount {
         amount
       }
     }
     deliveryGroups {
       id
-      deliveryOptions{
-        cost{
+      deliveryOptions {
+        cost {
           amount
         }
         handle
@@ -16,7 +30,7 @@ query DeliveryInput {
       }
     }
   }
-  discount{
+  discount {
     discountClasses
     metafield(namespace: "FUNCTIONS", key: "SHOPIFY_FUNCTION") {
       jsonValue
