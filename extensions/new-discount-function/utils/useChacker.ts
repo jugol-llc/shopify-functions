@@ -75,7 +75,7 @@ export function useChecker(cartItems: any = [], rules: any = [], cartDelivery: a
             }
 
             if (parameter === 'line_item_quantity') {
-                subConditionResult.lineItems = cartItems?.lines?.filter(item => {
+                subConditionResult.lineItems = cartItems?.lines?.filter((item: { quantity: any; id: any; }) => {
                         if (checkOperations(Number(item.quantity), operator, Number(value))) {
                             return item?.id;
                         }
@@ -105,7 +105,7 @@ export function useChecker(cartItems: any = [], rules: any = [], cartDelivery: a
 
         if (subConditionResult?.checks?.every(Boolean) && ['line_percentage_off', 'line_fixed_off'].includes(subConditionResult?.actionType)) {
             if (subConditionResult?.lineItems?.length) {
-                const targets = subConditionResult?.lineItems?.map((item) => ({
+                const targets = subConditionResult?.lineItems?.map((item: { id: any; }) => ({
                     cartLine: {id: item.id},
                 }));
 
@@ -121,25 +121,25 @@ export function useChecker(cartItems: any = [], rules: any = [], cartDelivery: a
             }
         }
 
+        if(cartDelivery?.length && subConditionResult?.checks?.every(Boolean) && ['shipping_percentage_off', 'shipping_fixed_off'].includes(subConditionResult?.actionType)){
+        const value = subConditionResult?.actionType === 'shipping_fixed_off'
+            ? { fixedAmount: { amount: parseFloat(subConditionResult.actionValue) } }
+            : { percentage: { value: parseFloat(subConditionResult.actionValue) } };
 
-        if (cartDelivery?.length && subConditionResult?.checks?.every(Boolean) && ['shipping_percentage_off', 'shipping_fixed_off'].includes(subConditionResult?.actionType)) {
-            const value =
-                subConditionResult?.actionType === 'shipping_fixed_off'
-                    ? {fixedAmount: {amount: parseFloat(subConditionResult.actionValue)}}
-                    : {percentage: {value: parseFloat(subConditionResult.actionValue)}};
-
-            const targets = cartDelivery?.map((item: { id: any; }) => ({
+        const targets = cartDelivery?.map((item: { id: any; }) =>{
+            return {
                 deliveryGroup: {
-                    id: item.id,
-                },
-            })) ?? [];
+                    id: item?.id,
+                }
+            }
+        })
 
-            deliveryCandidates.push({
-                message: `Shipping Discount Off - ${subConditionResult.actionValue} ${subConditionResult.actionType === 'shipping_fixed_off' ? 'TK' : '%'}`,
-                targets: targets,
-                value: value,
-            });
-        }
+        deliveryCandidates.push({
+            message: `Shipping Discount Off - ${subConditionResult?.actionValue} ${ subConditionResult?.actionType === 'shipping_fixed_off' ? 'TK' : '%' }`,
+            targets: targets,
+            value: value
+        });
+    }
     });
 
     return {orderCandidates, productCandidates, deliveryCandidates};

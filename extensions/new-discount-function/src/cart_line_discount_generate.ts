@@ -75,3 +75,57 @@
 //     operations,
 //   };
 // }
+
+
+
+
+
+
+
+
+// siscount sections. 
+
+
+  // const firstDeliveryGroup = input.cart.deliveryGroups?.filter(
+  //   (item) =>
+  //     Number?.parseFloat(item?.deliveryOptions?.[0]?.cost?.amount) > 0 && item
+  // )[0];
+
+  // let DISCOUNT_AMOUNT = 5;
+  // let DISCOUNT_TYPE = "fixed";
+  // if (input?.discount?.metafield?.jsonValue?.amount) {
+  //   DISCOUNT_AMOUNT = input?.discount?.metafield?.jsonValue?.amount;
+  // }
+  // if (input?.discount?.metafield?.jsonValue?.type) {
+  //   DISCOUNT_TYPE = input?.discount?.metafield?.jsonValue?.type;
+  // }
+
+  // const discountValue =
+  //   DISCOUNT_TYPE === "fixed"
+  //     ? { fixedAmount: { amount: DISCOUNT_AMOUNT } }
+  //     : { percentage: { value: DISCOUNT_AMOUNT } };
+
+
+
+  // return {
+  //   operations: [
+  //     {
+  //       deliveryDiscountsAdd: {
+  //         candidates: [
+  //           {
+  //             message: "FREE DELIVERY",
+  //             targets: [
+  //               {
+  //                 deliveryGroup: {
+  //                   id: firstDeliveryGroup?.id,
+  //                 },
+  //               },
+  //             ],
+  //             value: discountValue,
+  //           },
+  //         ],
+  //         selectionStrategy: DeliveryDiscountSelectionStrategy.All,
+  //       },
+  //     },
+  //   ],
+  // };

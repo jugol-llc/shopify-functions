@@ -15,16 +15,7 @@ export function cartLinesDiscountsGenerateRun(
   if (!input.cart.lines.length) {
     throw new Error("No cart lines found");
   }
-
-
-
-    input.cart.lines?.map(line => {
-      line.merchandise.product.hasTags.some(tag => tag.tag === 'discount' && tag.hasTag === true)
-
-    })
-
-
-
+  
   const operations: any = [];
 
   const hasOrderDiscountClass = input?.discount?.discountClasses?.includes(
