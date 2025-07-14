@@ -7,6 +7,7 @@ import {
 } from "../generated/api";
 import { ConditionResult } from "../types/rules";
 import { rulesSet } from "../utils/rules";
+import { useChecker } from "../utils/useChacker";
 
 export function cartLinesDiscountsGenerateRun(
   input: CartInput
@@ -14,6 +15,15 @@ export function cartLinesDiscountsGenerateRun(
   if (!input.cart.lines.length) {
     throw new Error("No cart lines found");
   }
+
+
+
+    input.cart.lines?.map(line => {
+      line.merchandise.product.hasTags.some(tag => tag.tag === 'discount' && tag.hasTag === true)
+
+    })
+
+
 
   const operations: any = [];
 
@@ -25,75 +35,105 @@ export function cartLinesDiscountsGenerateRun(
     DiscountClass.Product
   );
 
-  let chackedRules: ConditionResult[] = [];
-  if (input?.discount?.metafield?.jsonValue) {
-    chackedRules = rulesSet(input, input?.discount?.metafield?.jsonValue);
-  }
-
-  const isAppliedDiscount = chackedRules?.some(
-    (item) => item.subCondition === true
-  );
-
   if (!hasOrderDiscountClass && !hasProductDiscountClass) {
     return { operations: [] };
-  }
-  if ((hasOrderDiscountClass || hasProductDiscountClass) && chackedRules?.length) {
-    const orderCandidates: any[] = [];
-    const productCandidates: any[] = [];
+  } 
 
-    chackedRules.forEach((rule, ind) => {
-      if (!rule.subCondition) return;
+  if (hasOrderDiscountClass && hasProductDiscountClass) {
 
-      const discountValue =
-        rule.actionType === "fixed"
-          ? { fixedAmount: { amount: parseFloat(rule.actionValue) } }
-          : { percentage: { value: parseFloat(rule.actionValue) } };
+    // const cartItems = cartData?.payload?.input?.cart;
+    // const rules = cartData?.payload?.input?.discount?.metafield?.jsonValue;
+    const {productCandidates, orderCandidates} = useChecker(input?.cart, input?.discount?.metafield?.jsonValue)
 
-      if (hasOrderDiscountClass) {
-        orderCandidates.push({
-          message: `Check Condition - ${ind}`,
-          targets: [
-            {
-              orderSubtotal: {
-                excludedCartLineIds: [],
-              },
-            },
-          ],
-          value: discountValue,
-        });
-      }
-
-      if (hasProductDiscountClass) {
-        const targets = input.cart.lines.map((item) => ({
-          cartLine: { id: item.id },
-        }));
-
-        productCandidates.push({
-          message: `Check Product Condition - ${ind}`,
-          targets,
-          value: discountValue,
-        });
-      }
-    });
-
-    if (orderCandidates.length) {
+    if(productCandidates.length && hasProductDiscountClass){
       operations.push({
+        productDiscountsAdd: {
+          candidates: productCandidates,
+          selectionStrategy: ProductDiscountSelectionStrategy.All,
+        },
+      });
+    }
+
+    if (orderCandidates.length && hasOrderDiscountClass) {
+      operations.push({ 
         orderDiscountsAdd: {
           candidates: orderCandidates,
           selectionStrategy: OrderDiscountSelectionStrategy.First,
         },
       });
     }
-
-    if (productCandidates.length) {
-      operations.push({
-        productDiscountsAdd: {
-          candidates: productCandidates,
-          selectionStrategy: ProductDiscountSelectionStrategy.First,
-        },
-      });
-    }
   }
+
+  return {
+    operations,
+  };
+
+
+  // let chackedRules: ConditionResult[] = [];
+  // if (input?.discount?.metafield?.jsonValue) {
+  //   chackedRules = rulesSet(input, input?.discount?.metafield?.jsonValue);
+  // }
+
+  // const isAppliedDiscount = chackedRules?.some(
+  //   (item) => item.subCondition === true
+  // );
+  // if ((hasOrderDiscountClass || hasProductDiscountClass) && chackedRules?.length) {
+  //   const orderCandidates: any[] = [];
+  //   const productCandidates: any[] = [];
+
+  //   chackedRules.forEach((rule, ind) => {
+  //     if (!rule.subCondition) return;
+
+  //     const discountValue =
+  //       rule.actionType === "fixed"
+  //         ? { fixedAmount: { amount: parseFloat(rule.actionValue) } }
+  //         : { percentage: { value: parseFloat(rule.actionValue) } };
+
+  //     if (hasOrderDiscountClass) {
+  //       orderCandidates.push({
+  //         message: `Check Condition - ${ind}`,
+  //         targets: [
+  //           {
+  //             orderSubtotal: {
+  //               excludedCartLineIds: [],
+  //             },
+  //           },
+  //         ],
+  //         value: discountValue,
+  //       });
+  //     }
+
+  //     if (hasProductDiscountClass) {
+  //       const targets = input.cart.lines.map((item) => ({
+  //         cartLine: { id: item.id },
+  //       }));
+
+  //       productCandidates.push({
+  //         message: `Check Product Condition - ${ind}`,
+  //         targets,
+  //         value: discountValue,
+  //       });
+  //     }
+  //   });
+
+  //   if (orderCandidates.length) {
+  //     operations.push({
+  //       orderDiscountsAdd: {
+  //         candidates: orderCandidates,
+  //         selectionStrategy: OrderDiscountSelectionStrategy.First,
+  //       },
+  //     });
+  //   }
+
+  //   if (productCandidates.length) {
+  //     operations.push({
+  //       productDiscountsAdd: {
+  //         candidates: productCandidates,
+  //         selectionStrategy: ProductDiscountSelectionStrategy.First,
+  //       },
+  //     });
+  //   }
+  // }
 
   // console.log("chackedRules?.length < 0 && input?.discount?.metafield?.jsonValue?.conditions === undefined", chackedRules?.length < 0 && input?.discount?.metafield?.jsonValue?.conditions === undefined)
   // console.log("chackedRules", chackedRules)
@@ -160,9 +200,4 @@ export function cartLinesDiscountsGenerateRun(
   //     });
   //   }
   // }
-
-
-  return {
-    operations,
-  };
 }
