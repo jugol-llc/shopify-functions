@@ -30,11 +30,15 @@ export function cartLinesDiscountsGenerateRun(
     return { operations: [] };
   } 
 
-  if (hasOrderDiscountClass && hasProductDiscountClass) {
+  if (hasOrderDiscountClass || hasProductDiscountClass) {
 
     // const cartItems = cartData?.payload?.input?.cart;
     // const rules = cartData?.payload?.input?.discount?.metafield?.jsonValue;
     const {productCandidates, orderCandidates} = useChecker(input?.cart, input?.discount?.metafield?.jsonValue)
+
+    console.log("productCandidates", JSON.stringify(productCandidates, null, 2))
+    console.log("orderCandidates", JSON.stringify(orderCandidates, null, 2))
+
 
     if(productCandidates.length && hasProductDiscountClass){
       operations.push({
