@@ -57,160 +57,268 @@ export function useChecker(
   const orderCandidates: any[] = [];
   const productCandidates: any[] = [];
   const deliveryCandidates: any[] = [];
+  const checkConditionForSingle = [];
 
-  rules?.conditions?.forEach((item: Rule) => {
-    const { subConditions, ...refs } = item;
+rules?.conditions?.forEach((item) => {
+    const {subConditions, ...refs} = item;
     const subConditionResult = {
-      ...refs,
-      checks: [],
+        ...refs,
+        checks: []
     };
 
     subConditions?.forEach((singleCondition) => {
-      const { parameter, operator, value } = singleCondition;
+        const {parameter, operator, value} = singleCondition;
 
-      if (parameter === "total_line_items") {
-        const totalQty = cartItems?.lines?.reduce(
-          (sum, item) => sum + item.quantity,
-          0
-        );
-        const result = checkOperations(
-          Number(totalQty),
-          operator,
-          Number(value)
-        );
-        if (result && refs.actionType === "line_fixed_off") {
-          subConditionResult.lineItems = cartItems?.lines?.filter(
-            (item) => item?.id
-          );
+        if (parameter === 'total_line_items') {
+            const totalQty = cartItems?.lines?.reduce((sum, item) => sum + item.quantity, 0);
+            const result = checkOperations(Number(totalQty), operator, Number(value));
+            if (result && refs.actionType === 'line_fixed_off') {
+                subConditionResult.lineItems = cartItems?.lines?.filter(item => item?.id)
+            }
+            subConditionResult.checks.push(result);
         }
-        subConditionResult.checks.push(result);
-      }
 
-      if (parameter === "subtotal_price") {
-        const subtotal = cartItems?.cost?.subtotalAmount?.amount;
+        if (parameter === 'subtotal_price') {
+            const subtotal = cartItems?.cost?.subtotalAmount?.amount;
 
-        const result = checkOperations(
-          Number(subtotal),
-          operator,
-          Number(value)
-        );
-        subConditionResult.checks.push(result);
-      }
+            const result = checkOperations(Number(subtotal), operator, Number(value));
+            subConditionResult.checks.push(result);
+        }
 
-      if (parameter === "line_item_quantity") {
-        subConditionResult.lineItems = cartItems?.lines?.filter((item) => {
-          if (checkOperations(Number(item.quantity), operator, Number(value))) {
-            return item?.id;
-          }
-        });
-      }
+        if (parameter === 'line_item_quantity') {
+            subConditionResult.lineItems = cartItems?.lines?.filter(item => {
+                    if (checkOperations(Number(item.quantity), operator, Number(value))) {
+                        return item?.id;
+                    }
+                }
+            );
+        }
     });
 
-    if (
-      subConditionResult?.checks?.every(Boolean) &&
-      ["subtotal_percentage_off", "subtotal_fixed_off"].includes(
-        subConditionResult?.actionType
-      )
-    ) {
-      const value =
-        subConditionResult?.actionType === "subtotal_fixed_off"
-          ? {
-              fixedAmount: {
-                amount: parseFloat(subConditionResult.actionValue),
-              },
-            }
-          : {
-              percentage: { value: parseFloat(subConditionResult.actionValue) },
-            };
+    if (rules.conditionType === 'multiple') {
+        checkConditionForSingle.push(subConditionResult)
+    }
+    if (rules.conditionType === 'single') {
+        checkConditionForSingle.push(subConditionResult.checks)
+    }
+});
 
-      orderCandidates.push({
-        message: `Order Discount Off - ${subConditionResult?.actionValue} ${
-          subConditionResult?.actionType === "subtotal_fixed_off" ? "TK" : "%"
-        }`,
-        targets: [
-          {
-            orderSubtotal: {
-              excludedCartLineIds: subConditionResult?.excludeProducts ?? [],
-            },
-          },
-        ],
-        value: value,
-      });
+const givenDiscountByOperation = (actionType, actionValue, excludeProducts) => {
+    if (['subtotal_percentage_off', 'subtotal_fixed_off'].includes(actionType)) {
+        const value = actionType === 'subtotal_fixed_off'
+            ? {fixedAmount: {amount: parseFloat(actionValue)}}
+            : {percentage: {value: parseFloat(actionValue)}};
+        orderCandidates.push({
+            message: `Order Discount Off - ${actionValue} ${actionType === 'subtotal_fixed_off' ? 'TK' : '%'}`,
+            targets: [
+                {
+                    orderSubtotal: {
+                        excludedCartLineIds: excludeProducts ?? [],
+                    },
+                },
+            ],
+            value: value
+        });
     }
 
-    if (
-      subConditionResult?.checks?.every(Boolean) &&
-      ["line_percentage_off", "line_fixed_off"].includes(
-        subConditionResult?.actionType
-      )
-    ) {
-      console.log("subConditionResult", subConditionResult);
-      if (subConditionResult?.lineItems?.length) {
-        const targets = subConditionResult?.lineItems?.map((item) => ({
-          cartLine: { id: item.id },
-        }));
-        console.log(
-          "subConditionResult?.actionType",
-          subConditionResult?.actionType
-        );
+    if (['line_percentage_off', 'line_fixed_off'].includes(actionType)) {
+        if (cartItems?.lines?.length) {
+            const targets = cartItems?.lines?.map((item) => ({
+                cartLine: {id: item.id},
+            }));
 
-        const value =
-          subConditionResult?.actionType === "line_fixed_off"
-            ? {
-                fixedAmount: {
-                  amount: parseFloat(subConditionResult.actionValue),
-                },
-              }
-            : {
-                percentage: {
-                  value: parseFloat(subConditionResult.actionValue),
-                },
-              };
+            const value = actionType === 'line_fixed_off'
+                ? {fixedAmount: {amount: parseFloat(actionValue)}}
+                : {percentage: {value: parseFloat(actionValue)}};
+
+            productCandidates.push({
+                message: `Product Discount Off - ${actionValue} ${actionType === 'line_fixed_off' ? 'TK' : '%'}`,
+                targets: targets,
+                value: value
+            });
+        }
+    }
+
+    if (['shipping_percentage_off', 'shipping_fixed_off'].includes(actionType)) {
+        const value = actionType === 'shipping_fixed_off'
+            ? {fixedAmount: {amount: parseFloat(actionValue)}}
+            : {percentage: {value: parseFloat(actionValue)}};
+
+        const targets = cartDelivery?.map((item) => {
+            return {
+                deliveryGroup: {
+                    id: item?.id,
+                }
+            }
+        })
+
+        deliveryCandidates.push({
+            message: `Shipping Discount Off - ${actionValue} ${actionType === 'shipping_fixed_off' ? 'TK' : '%'}`,
+            targets: targets,
+            value: value
+        });
+    }
+}
+
+if (rules.conditionType === "no-rules" && rules.discountClasses.length) {
+    if (rules.discountClasses.includes('PRODUCT') && rules?.discountClassData['PRODUCT']) {
+        const {discountAmount, discountType} = rules?.discountClassData['PRODUCT'] ?? {};
+
+        const value = discountType === 'fixed'
+            ? {fixedAmount: {amount: parseFloat(discountAmount)}}
+            : {percentage: {value: parseFloat(discountAmount)}};
+
+        const targets = cartItems?.lines?.map((item) => ({
+            cartLine: {id: item.id},
+        }));
 
         productCandidates.push({
-          message: `Product Discount Off - ${subConditionResult?.actionValue} ${
-            subConditionResult?.actionType === "line_fixed_off" ? "TK" : "%"
-          }`,
-          targets: targets,
-          value: value,
+            message: `Product Discount Off - ${discountAmount} ${discountType === 'fixed' ? 'TK' : '%'}`,
+            targets: targets,
+            value: value
         });
-      }
     }
 
-    if (
-      subConditionResult?.checks?.every(Boolean) &&
-      ["shipping_percentage_off", "shipping_fixed_off"].includes(
-        subConditionResult?.actionType
-      )
-    ) {
-      const value =
-        subConditionResult?.actionType === "shipping_fixed_off"
-          ? {
-              fixedAmount: {
-                amount: parseFloat(subConditionResult.actionValue),
-              },
+    if (rules.discountClasses.includes('ORDER') && rules?.discountClassData['ORDER']) {
+        const {discountAmount, discountType} = rules?.discountClassData['ORDER'] ?? {};
+
+        const value = discountType === 'fixed'
+            ? {fixedAmount: {amount: parseFloat(discountAmount)}}
+            : {percentage: {value: parseFloat(discountAmount)}};
+
+        orderCandidates.push({
+            message: `Order Discount Off - ${discountAmount} ${discountType === 'fixed' ? 'TK' : '%'}`,
+            targets: [
+                {
+                    orderSubtotal: {
+                        excludedCartLineIds: [],
+                    },
+                },
+            ],
+            value: value
+        });
+    }
+
+    if (rules.discountClasses.includes('SHIPPING') && rules?.discountClassData['ORDER']) {
+        const {discountAmount, discountType} = rules?.discountClassData['ORDER'] ?? {};
+
+        const value = discountType === 'fixed'
+            ? {fixedAmount: {amount: parseFloat(discountAmount)}}
+            : {percentage: {value: parseFloat(discountAmount)}};
+
+        const targets = cartDelivery?.map((item) => {
+            return {
+                deliveryGroup: {
+                    id: item?.id,
+                }
             }
-          : {
-              percentage: { value: parseFloat(subConditionResult.actionValue) },
-            };
+        })
 
-      const targets = cartDelivery?.map((item) => {
-        return {
-          deliveryGroup: {
-            id: item?.id,
-          },
-        };
-      });
-
-      deliveryCandidates.push({
-        message: `Shipping Discount Off - ${subConditionResult?.actionValue} ${
-          subConditionResult?.actionType === "shipping_fixed_off" ? "TK" : "%"
-        }`,
-        targets: targets,
-        value: value,
-      });
+        deliveryCandidates.push({
+            message: `Shipping Discount Off - ${discountAmount} ${discountType === 'fixed' ? 'TK' : '%'}`,
+            targets: targets,
+            value: value
+        });
     }
-  });
+}
+
+if (rules?.conditionType === "single" && rules?.discountClasses?.length) {
+    if (rules?.discountClasses?.includes("PRODUCT") && rules?.discountClassData['PRODUCT']) {
+        const {discountAmount, discountType} = rules?.discountClassData['PRODUCT'] ?? {};
+
+        const value = discountType === 'fixed'
+            ? {fixedAmount: {amount: parseFloat(discountAmount)}}
+            : {percentage: {value: parseFloat(discountAmount)}};
+
+        const targets = cartItems?.lines?.map((item) => ({
+            cartLine: {id: item?.id},
+        }));
+
+        productCandidates.push({
+            message: `Product Discount Off - ${discountAmount} ${
+                discountType === "fixed" ? "TK" : "%"
+            }`,
+            targets: targets,
+            value: value,
+        });
+    }
+    if (rules?.discountClasses?.includes("ORDER") && rules?.discountClassData['ORDER']) {
+        const {discountAmount, discountType} = rules?.discountClassData['ORDER'] ?? {};
+
+        const value = discountType === 'fixed'
+            ? {fixedAmount: {amount: parseFloat(discountAmount)}}
+            : {percentage: {value: parseFloat(discountAmount)}};
+
+        orderCandidates.push({
+            message: `Order Discount Off - ${discountAmount} ${
+                discountType === "fixed" ? "TK" : "%"
+            }`,
+            targets: [
+                {
+                    orderSubtotal: {
+                        excludedCartLineIds: [],
+                    },
+                },
+            ],
+            value: value,
+        });
+    }
+
+    if (rules?.discountClasses?.includes("SHIPPING") && rules?.discountClassData['SHIPPING']) {
+        const {discountAmount, discountType} = rules?.discountClassData['SHIPPING'] ?? {};
+
+        const value = discountType === 'fixed'
+            ? {fixedAmount: {amount: parseFloat(discountAmount)}}
+            : {percentage: {value: parseFloat(discountAmount)}};
+
+        const targets = cartDelivery?.map((item) => {
+            return {
+                deliveryGroup: {
+                    id: item?.id,
+                },
+            };
+        });
+
+        deliveryCandidates.push({
+            message: `Shipping Discount Off - ${discountAmount} ${
+                discountType === "fixed" ? "TK" : "%"
+            }`,
+            targets: targets,
+            value: value,
+        });
+    }
+}
+
+if (rules?.conditionType === 'multiple') {
+    const allChecksTrue = checkConditionForSingle.filter(rule =>
+        rule?.checks?.length > 0 && rule?.checks?.every(check => check === true)
+    );
+
+    if (rules?.strategy === 'first') {
+        givenDiscountByOperation(allChecksTrue[0]?.actionType, allChecksTrue[0]?.actionValue);
+    }
+
+    if(rules?.strategy === 'all'){
+        allChecksTrue?.forEach(({actionType, actionValue}) => givenDiscountByOperation(actionType, actionValue))
+    }
+
+    if(rules?.strategy === 'maximum'){
+        const maximumCheck = allChecksTrue?.map(function (item){
+            let percentageAmount = item?.actionValue
+            if(['subtotal_percentage_off', 'line_percentage_off', 'shipping_percentage_off']?.includes(item?.actionType)){
+                percentageAmount = ((cartItems?.cost?.subtotalAmount?.amount * item?.actionValue) ?? 0) / 100
+            }
+            return {
+                ...item,
+                discountedValue: parseFloat(percentageAmount)
+            }
+        });
+
+        const maximumGivenDiscount = maximumCheck?.reduce((max, item) => item.discountedValue > max.discountedValue ? item : max)
+        givenDiscountByOperation(maximumGivenDiscount?.actionType, maximumGivenDiscount?.actionValue);
+    }
+}
+
 
   return { orderCandidates, productCandidates, deliveryCandidates };
 }
