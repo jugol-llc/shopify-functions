@@ -1,4 +1,4 @@
-query CartInput {
+query CartInput($includedProductTags: [String!]) {
   cart {
     lines {
       id
@@ -6,6 +6,9 @@ query CartInput {
       merchandise{
         ...on ProductVariant{
           id
+          product{
+            includedProductTags: hasAnyTag(tags: $includedProductTags)
+          }
         }
       }
       cost {
@@ -22,7 +25,7 @@ query CartInput {
   }
   discount{
     discountClasses
-    metafield(namespace: "FUNCTIONS", key: "SHOPIFY_FUNCTION") {
+    metafield(namespace: "$app:FUNCTIONS", key: "function-configuration") {
       jsonValue
     }
   }
