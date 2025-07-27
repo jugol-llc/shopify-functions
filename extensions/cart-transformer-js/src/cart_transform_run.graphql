@@ -4,11 +4,19 @@ query CartInput{
       id
       quantity
       merchandise{
+          __typename
         ...on ProductVariant{
           id
           product{
             id
+            title
+            productTags: hasAnyTag(tags: ["Bundle 1", "Bundle 2"])
           }
+        }
+      }
+      cost{
+        subtotalAmount{
+          amount
         }
       }
     }

@@ -49,6 +49,102 @@ query CartInput($includedProductTags: [String!]) {
 
 ```
 
+## Function generated Log
+
+```JSON
+{
+  "shopId": 76326535202,
+  "apiClientId": 264595898369,
+  "payload": {
+    "export": "cart-lines-discounts-generate-run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/0",
+            "quantity": 3,
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/43229298163746",
+              "product": {
+                "id": "gid://shopify/Product/7840387498018",
+                "includedProductTags": false
+              }
+            },
+            "cost": {
+              "subtotalAmount": {
+                "amount": "3075.0"
+              }
+            }
+          }
+        ],
+        "cost": {
+          "subtotalAmount": {
+            "amount": "3075.0"
+          }
+        }
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT"
+        ],
+        "metafield": {
+          "jsonValue": {
+            "discountClasses": [
+              "PRODUCT"
+            ],
+            "conditionType": "multiple",
+            "conditions": [
+              {
+                "subConditions": [
+                  {
+                    "parameter": null,
+                    "operator": null,
+                    "value": null
+                  }
+                ],
+                "actionType": "buy_x_get_y",
+                "actionValue": {
+                  "buyProducts": [
+                    "gid://shopify/ProductVariant/43229298163746"
+                  ],
+                  "getProducts": [
+                    "gid://shopify/ProductVariant/43227596488738"
+                  ]
+                }
+              }
+            ],
+            "strategy": "first"
+          }
+        }
+      }
+    },
+    "inputBytes": 585,
+    "output": {
+      "operations": []
+    },
+    "outputBytes": 13,
+    "logs": [
+      "productCandidates []",
+      "orderCandidates []"
+    ],
+    "functionId": "07e83b68-dd35-4dd7-9415-a68ea1fde67f",
+    "fuelConsumed": 693971,
+    "inputQueryVariablesMetafieldValue": null,
+    "inputQueryVariablesMetafieldNamespace": "$app:FUNCTIONS",
+    "inputQueryVariablesMetafieldKey": "function-configuration"
+  },
+  "logType": "function_run",
+  "status": "success",
+  "source": "new-discount-function",
+  "sourceNamespace": "extensions",
+  "logTimestamp": "2025-07-27T06:30:44.491955Z",
+  "localTime": "2025-07-27 12:30:44",
+  "storeName": "jk-llc-store.myshopify.com"
+}
+```
+
+
+
 ## Function Toml Metafield Input
 
 ```toml
