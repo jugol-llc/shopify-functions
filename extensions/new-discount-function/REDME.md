@@ -1,29 +1,78 @@
-
-
-## 🔁 Function 2 – product, order and shipping discount 
+## 🔁 Function 2 – product, order and shipping discount
 
 **Date:** 06-Jul-2025
 
-``` 
-Extension path: 
-shopify-app/discounter/extensions/new-discount-function 
+```
+Extension path:
+shopify-app/discounter/extensions/new-discount-function
 ```
 
 **Description:**
 Implements a discount function that applies conditional discounts based on `Line item`, `order sub-total`, and `shipping cost`. Supports combining multiple discount types within a single rule set.
 
+## Discount Graphql Query for the Order, Product and Shipping
 
-## Delivery Options Discounts 
+```Graphql
+query CartInput($includedProductTags: [String!]) {
+  cart {
+    lines {
+      id
+      quantity
+      merchandise{
+        ...on ProductVariant{
+          id
+          product{
+            id
+            includedProductTags: hasAnyTag(tags: $includedProductTags)
+          }
+        }
+      }
+      cost {
+        subtotalAmount {
+          amount
+        }
+      }
+    }
+    cost{
+      subtotalAmount{
+        amount
+      }
+    }
+  }
+  discount{
+    discountClasses
+    metafield(namespace: "$app:FUNCTIONS", key: "function-meta-data") {
+      jsonValue
+    }
+  }
+}
+
+```
+
+## Function Toml Metafield Input
+
+```toml
+## Metafield Input
+[extensions.input.variables]
+  namespace = "$app:FUNCTIONS"
+  key = "function-configuration"
+```
+
+## Delivery Options Discounts
+
 ### Rules
-``` json
+
+```json
 IF
   amount > 0.0 && discountClasses.includes('SHIPPING')
   THEN APPLY SHIPPING DISCOUNT THIS DELIVERY GROUP
 ELSE
   DOSN'T APPLY THE DISCOUNT
 ```
+
 ### Input (STDIN)
-``` json
+
+```json
 {
   "cart": {
     "deliveryGroups": [
@@ -50,18 +99,14 @@ ELSE
     ]
   },
   "discount": {
-    "discountClasses": [
-      "PRODUCT",
-      "ORDER",
-      "SHIPPING"
-    ]
+    "discountClasses": ["PRODUCT", "ORDER", "SHIPPING"]
   }
 }
 ```
 
+### Output (STDOUT)
 
-###  Output (STDOUT)
-``` JSON
+```JSON
 {
   "operations": [
     {
@@ -91,16 +136,20 @@ ELSE
 ```
 
 ## Cart Lines Discounts
+
 ### Rules
-``` json
+
+```json
 IF
   discountClasses.includes('PRODUCT')
   THEN APPLY SHIPPING DISCOUNT MAX AMOUNTED LINEITEM AND ORDER SUB TOTAL
 ELSE
   DOSN'T APPLY THE DISCOUNT
 ```
+
 ### Input (STDIN)
-``` json
+
+```json
 {
   "cart": {
     "lines": [
@@ -123,18 +172,14 @@ ELSE
     ]
   },
   "discount": {
-    "discountClasses": [
-      "PRODUCT",
-      "ORDER",
-      "SHIPPING"
-    ]
+    "discountClasses": ["PRODUCT", "ORDER", "SHIPPING"]
   }
 }
 ```
 
+### Output (STDOUT)
 
-###  Output (STDOUT)
-``` JSON
+```JSON
 {
   "operations": [
     {
@@ -179,6 +224,272 @@ ELSE
           }
         ],
         "selectionStrategy": "FIRST"
+      }
+    }
+  ]
+}
+```
+
+## Conditional Multiple Discount
+
+### Input (STDIN)
+
+```json
+{
+  "cart": {
+    "lines": [
+      {
+        "id": "gid://shopify/CartLine/0",
+        "quantity": 3,
+        "merchandise": {
+          "id": "gid://shopify/ProductVariant/43227596488738",
+          "product": {
+            "includedProudcts": false
+          }
+        },
+        "cost": {
+          "subtotalAmount": {
+            "amount": "3900.0"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/CartLine/1",
+        "quantity": 3,
+        "merchandise": {
+          "id": "gid://shopify/ProductVariant/43229297967138",
+          "product": {
+            "includedProudcts": false
+          }
+        },
+        "cost": {
+          "subtotalAmount": {
+            "amount": "74.85"
+          }
+        }
+      }
+    ],
+    "cost": {
+      "subtotalAmount": {
+        "amount": "3974.85"
+      }
+    }
+  },
+  "discount": {
+    "discountClasses": ["PRODUCT", "ORDER", "SHIPPING"],
+    "metafield": {
+      "jsonValue": {
+        "discountClasses": ["PRODUCT", "ORDER", "SHIPPING"],
+        "conditionType": "multiple",
+        "conditions": [
+          {
+            "subConditions": [
+              {
+                "parameter": "total_line_items",
+                "operator": ">",
+                "value": "5"
+              }
+            ],
+            "actionType": "subtotal_percentage_off",
+            "actionValue": "50"
+          },
+          {
+            "subConditions": [
+              {
+                "parameter": "subtotal_price",
+                "operator": ">",
+                "value": "1000"
+              }
+            ],
+            "actionType": "line_percentage_off",
+            "actionValue": "50"
+          }
+        ],
+        "strategy": "all"
+      }
+    }
+  }
+}
+```
+
+### Output (STDOUT)
+
+```JSON
+{
+  "operations": [
+    {
+      "productDiscountsAdd": {
+        "candidates": [
+          {
+            "message": "Product Discount Off - 50 %",
+            "targets": [
+              {
+                "cartLine": {
+                  "id": "gid://shopify/CartLine/0"
+                }
+              },
+              {
+                "cartLine": {
+                  "id": "gid://shopify/CartLine/1"
+                }
+              }
+            ],
+            "value": {
+              "percentage": {
+                "value": 50
+              }
+            }
+          }
+        ],
+        "selectionStrategy": "ALL"
+      }
+    },
+    {
+      "orderDiscountsAdd": {
+        "candidates": [
+          {
+            "message": "Order Discount Off - 50 %",
+            "targets": [
+              {
+                "orderSubtotal": {
+                  "excludedCartLineIds": []
+                }
+              }
+            ],
+            "value": {
+              "percentage": {
+                "value": 50
+              }
+            }
+          }
+        ],
+        "selectionStrategy": "FIRST"
+      }
+    }
+  ]
+}
+```
+
+
+
+
+## buyX getX Code Discounts
+
+### Input (STDIN)
+
+```json
+{
+  "cart": {
+    "lines": [
+      {
+        "id": "gid://shopify/CartLine/0",
+        "quantity": 3,
+        "merchandise": {
+          "id": "gid://shopify/ProductVariant/43227596488738",
+          "product": {
+            "id": "gid://shopify/Product/7839957286946",
+            "includedProductTags": false
+          }
+        },
+        "cost": {
+          "subtotalAmount": {
+            "amount": "3900.0"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/CartLine/1",
+        "quantity": 3,
+        "merchandise": {
+          "id": "gid://shopify/ProductVariant/43229297967138",
+          "product": {
+            "id": "gid://shopify/Product/7840387399714",
+            "includedProductTags": false
+          }
+        },
+        "cost": {
+          "subtotalAmount": {
+            "amount": "74.85"
+          }
+        }
+      },
+      {
+        "id": "gid://shopify/CartLine/2",
+        "quantity": 1,
+        "merchandise": {
+          "id": "gid://shopify/ProductVariant/43229298163746",
+          "product": {
+            "id": "gid://shopify/Product/7840387498018",
+            "includedProductTags": false
+          }
+        },
+        "cost": {
+          "subtotalAmount": {
+            "amount": "1025.0"
+          }
+        }
+      }
+    ],
+    "cost": {
+      "subtotalAmount": {
+        "amount": "4999.85"
+      }
+    }
+  },
+  "discount": {
+    "discountClasses": ["PRODUCT"],
+    "metafield": {
+      "jsonValue": {
+        "discountClasses": ["PRODUCT"],
+        "conditionType": "multiple",
+        "conditions": [
+          {
+            "subConditions": [
+              {
+                "parameter": null,
+                "operator": null,
+                "value": null
+              }
+            ],
+            "actionType": "buy_x_get_y",
+            "actionValue": {
+              "buyProducts": ["gid://shopify/ProductVariant/43229298163746"],
+              "getProducts": ["gid://shopify/ProductVariant/43227596488738"]
+            }
+          }
+        ],
+        "strategy": "first"
+      }
+    }
+  }
+}
+```
+
+### Output (STDOUT)
+
+```JSON
+{
+  "operations": [
+    {
+      "productDiscountsAdd": {
+        "candidates": [
+          {
+            "message": "BuyX GetX Free",
+            "targets": [
+              {
+                "cartLine": {
+                  "id": "gid://shopify/CartLine/0"
+                }
+              }
+            ],
+            "value": {
+              "percentage": {
+                "value": 100
+              }
+            }
+          }
+        ],
+        "selectionStrategy": "ALL"
       }
     }
   ]

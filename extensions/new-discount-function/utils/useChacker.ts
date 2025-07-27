@@ -59,6 +59,7 @@ export function useChecker(
   const deliveryCandidates: any[] = [];
   const checkConditionForSingle = [];
 
+let buyXGetYData = {};
 rules?.conditions?.forEach((item) => {
     const {subConditions, ...refs} = item;
     const subConditionResult = {
@@ -100,6 +101,9 @@ rules?.conditions?.forEach((item) => {
     }
     if (rules.conditionType === 'single') {
         checkConditionForSingle.push(subConditionResult.checks)
+    }
+    if(refs.actionType === 'buy_x_get_y'){
+        buyXGetYData = refs
     }
 });
 
@@ -291,7 +295,7 @@ if (rules?.conditionType === "single" && rules?.discountClasses?.length) {
 
 if (rules?.conditionType === 'multiple') {
     const allChecksTrue = checkConditionForSingle.filter(rule =>
-        rule?.checks?.length > 0 && rule?.checks?.every(check => check === true)
+        rule.checks.length > 0 && rule.checks.every(check => check === true)
     );
 
     if (rules?.strategy === 'first') {
@@ -316,6 +320,44 @@ if (rules?.conditionType === 'multiple') {
 
         const maximumGivenDiscount = maximumCheck?.reduce((max, item) => item.discountedValue > max.discountedValue ? item : max)
         givenDiscountByOperation(maximumGivenDiscount?.actionType, maximumGivenDiscount?.actionValue);
+    }
+
+    if(buyXGetYData && buyXGetYData?.actionType === 'buy_x_get_y'){
+        const variantIds = cartItems?.lines?.map((item) => item?.merchandise?.id)
+        const allMatch = buyXGetYData?.actionValue?.buyProducts?.every(id =>
+            variantIds?.includes(id)
+        );
+
+        if(allMatch){
+            const getProductIds = buyXGetYData?.actionValue?.getProducts?.filter(id => {
+                if (variantIds?.includes(id)) {
+                    return id;
+                }
+            });
+
+            if(getProductIds.length){
+                const value = {percentage: {value: 100}};
+
+
+                const cartLines = getProductIds?.map((item) =>{
+                    return cartItems?.lines?.filter((line) =>{
+                        if(line?.merchandise?.id === item){
+                            return line.id
+                        }
+                    })[0]?.id
+                })
+
+                const targets = cartLines?.map((item) => ({
+                    cartLine: {id: item},
+                }));
+
+                productCandidates.push({
+                    message: `BuyX GetX Free`,
+                    targets: targets,
+                    value: value,
+                });
+            }
+        }
     }
 }
 

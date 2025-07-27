@@ -29,3 +29,17 @@ shopify-app/discounter/extensions/new-discount-function
 
 **Description:**
 Implements a discount function that applies conditional discounts based on `Line item`, `order sub-total`, and `shipping cost`. Supports combining multiple discount types within a single rule set.
+
+
+
+## 🔁 Function 3 – cart transform function  
+
+**Date:** 27-Jul-2025
+
+``` 
+Extension path: 
+shopify-app/discounter/extensions/cart-transformer-js 
+
+```
+**Description:**
+Cart transformers function for using the remane product line item title, repless price or change the product lineitem image. 
